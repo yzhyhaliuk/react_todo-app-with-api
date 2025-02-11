@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import classNames from 'classnames';
-import React, { Dispatch, SetStateAction } from 'react';
+import React, { Dispatch, SetStateAction, useState } from 'react';
 import { Todo } from '../types/Todo';
 
 type Props = {
@@ -24,15 +24,16 @@ export const TodoList: React.FC<Props> = ({
   deletingTodoIds,
   editingId,
   setEditingId,
-  setTitle,
-  title,
   renameTodo,
 }) => {
+  const [changingTitle, setChangingTitle] = useState<string>('');
   const handleTitleChange = (todoId: number) => {
-    if (title.trim() === '') {
+    if (changingTitle.trim() === '') {
       handleDelete(todoId);
-    } else if (title !== todos?.find(todo => todo.id === todoId)?.title) {
-      renameTodo(todoId, title.trim());
+    } else if (
+      changingTitle !== todos?.find(todo => todo.id === todoId)?.title
+    ) {
+      renameTodo(todoId, changingTitle.trim());
     } else {
       setEditingId(null);
     }
@@ -40,7 +41,7 @@ export const TodoList: React.FC<Props> = ({
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setTitle('');
+    setChangingTitle('');
   };
 
   const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -82,8 +83,8 @@ export const TodoList: React.FC<Props> = ({
                 type="text"
                 className="todo__title-field"
                 placeholder="Empty todo will be deleted"
-                value={title}
-                onChange={event => setTitle(event.target.value)}
+                value={changingTitle}
+                onChange={event => setChangingTitle(event.target.value)}
                 onBlur={handleBlur}
                 onKeyUp={handleKeyUp}
                 autoFocus
@@ -96,7 +97,7 @@ export const TodoList: React.FC<Props> = ({
                 className="todo__title"
                 onDoubleClick={() => {
                   setEditingId(todo.id);
-                  setTitle(todo.title);
+                  setChangingTitle(todo.title);
                 }}
               >
                 {todo.title}

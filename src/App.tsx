@@ -192,7 +192,6 @@ export const App: React.FC = () => {
       setErrorMessage('Unable to update a todo');
     } finally {
       setUpdatingTodoId(null);
-      setTitle('');
     }
   };
 
