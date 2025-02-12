@@ -16,12 +16,11 @@ import { FilterType } from './types/FilterType';
 import { Header } from './components/Header';
 import { TodoList } from './components/TodoList';
 import { Footer } from './components/Footer';
-import { TodoItem } from './components/TodoItem';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [updatingTodoId, setUpdatingTodoId] = useState<number | null>(null);
+  const [updatingTodoIds, setUpdatingTodoIds] = useState<number[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>(FilterType.All);
   const [title, setTitle] = useState<string>('');
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
@@ -56,7 +55,7 @@ export const App: React.FC = () => {
   }, []);
 
   const toggleTodo = async (id: number) => {
-    setUpdatingTodoId(id);
+    setUpdatingTodoIds(prevIds => [...prevIds, id]);
     const todoToUpdate = todos?.find(todo => todo.id === id);
 
     if (!todoToUpdate) {
@@ -73,22 +72,25 @@ export const App: React.FC = () => {
     } catch {
       setErrorMessage('Unable to update a todo');
     } finally {
-      setUpdatingTodoId(null);
+      setUpdatingTodoIds(prevIds => prevIds.filter(todoId => todoId !== id));
     }
   };
 
   const toggleAll = () => {
     const idsToToggle = todos.map(todo => todo.id);
 
+    setUpdatingTodoIds(idsToToggle);
+
     if (todos.every(todo => todo.completed)) {
-      for (const id of idsToToggle) {
-        toggleTodo(id);
-      }
+      Promise.all(idsToToggle.map(id => toggleTodo(id)))
+        .finally(() => setUpdatingTodoIds([]));
     } else {
-      todos.map(todo => !todo.completed ? toggleTodo(todo.id) : todo);
+      const incompleteIds = todos.filter(todo =>
+        !todo.completed).map(todo => todo.id);
+
+      Promise.all(incompleteIds.map(id => toggleTodo(id)))
+        .finally(() => setUpdatingTodoIds([]));
     }
-
-
   };
 
   const changeFilter = (filterType: FilterType) => {
@@ -180,7 +182,7 @@ export const App: React.FC = () => {
 
   const renameTodo = async (id: number, newTitle: string) => {
     try {
-      setUpdatingTodoId(id);
+      setUpdatingTodoIds(prevIds => [...prevIds, id]);
       await updateTodo(id, { title: newTitle });
       setTodos(prevTodos =>
         (prevTodos as Todo[]).map(todo =>
@@ -191,7 +193,7 @@ export const App: React.FC = () => {
     } catch {
       setErrorMessage('Unable to update a todo');
     } finally {
-      setUpdatingTodoId(null);
+      setUpdatingTodoIds(prevIds => prevIds.filter(todoId => todoId !== id));
     }
   };
 
@@ -217,7 +219,7 @@ export const App: React.FC = () => {
         <TodoList
           todos={filteredTodos}
           toggleTodo={toggleTodo}
-          updatingTodoId={updatingTodoId}
+          updatingTodoIds={updatingTodoIds}
           handleDelete={handleDelete}
           deletingTodoIds={deletingTodoIds}
           editingId={editingId}
@@ -225,11 +227,11 @@ export const App: React.FC = () => {
           setTitle={setTitle}
           title={title}
           renameTodo={renameTodo}
+          tempTodo={tempTodo}
         />
-        {tempTodo && <TodoItem todo={tempTodo} />}
 
         {/* Hide the footer if there are no todos */}
-        {(todos ?? []).length > 0 && (
+        {!!todos.length && (
           <Footer
             todos={todos}
             activeFilter={activeFilter}

@@ -1,12 +1,12 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import classNames from 'classnames';
 import React, { Dispatch, SetStateAction, useState } from 'react';
 import { Todo } from '../types/Todo';
+import { TodoItem } from './TodoItem';
 
 type Props = {
   todos: Todo[] | null;
   toggleTodo: (id: number) => void;
-  updatingTodoId: number | null;
+  updatingTodoIds: number[];
   handleDelete: (id: number) => void;
   deletingTodoIds: number[];
   editingId: number | null;
@@ -14,17 +14,19 @@ type Props = {
   setTitle: Dispatch<SetStateAction<string>>;
   title: string;
   renameTodo: (id: number, title: string) => void;
+  tempTodo: Todo | null;
 };
 
 export const TodoList: React.FC<Props> = ({
   todos,
   toggleTodo,
-  updatingTodoId,
+  updatingTodoIds,
   handleDelete,
   deletingTodoIds,
   editingId,
   setEditingId,
   renameTodo,
+  tempTodo,
 }) => {
   const [changingTitle, setChangingTitle] = useState<string>('');
   const handleTitleChange = (todoId: number) => {
@@ -56,78 +58,44 @@ export const TodoList: React.FC<Props> = ({
 
   return (
     <section className="todoapp__main" data-cy="TodoList">
-      {todos?.map(todo => (
-        <div
-          key={todo.id}
-          data-cy="Todo"
-          className={classNames('todo', { completed: todo.completed })}
-        >
-          <label className="todo__status-label">
-            <input
-              data-cy="TodoStatus"
-              type="checkbox"
-              className="todo__status"
-              onChange={() => toggleTodo(todo.id)}
-              checked={todo.completed}
-            />
-          </label>
-          {editingId === todo.id ? (
-            <form
-              onSubmit={event => {
-                event.preventDefault();
-                handleTitleChange(todo.id);
-              }}
-            >
-              <input
-                data-cy="TodoTitleField"
-                type="text"
-                className="todo__title-field"
-                placeholder="Empty todo will be deleted"
-                value={changingTitle}
-                onChange={event => setChangingTitle(event.target.value)}
-                onBlur={handleBlur}
-                onKeyUp={handleKeyUp}
-                autoFocus
-              />
-            </form>
-          ) : (
-            <>
-              <span
-                data-cy="TodoTitle"
-                className="todo__title"
-                onDoubleClick={() => {
-                  setEditingId(todo.id);
-                  setChangingTitle(todo.title);
-                }}
-              >
-                {todo.title}
-              </span>
+      {todos?.map(todo => {
+        return (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            editingId={editingId}
+            changingTitle={changingTitle}
+            updatingTodoIds={updatingTodoIds}
+            deletingTodoIds={deletingTodoIds}
+            setEditingId={setEditingId}
+            setChangingTitle={setChangingTitle}
+            toggleTodo={toggleTodo}
+            handleTitleChange={handleTitleChange}
+            handleBlur={handleBlur}
+            handleKeyUp={handleKeyUp}
+            handleDelete={handleDelete}
+            isTempTodo={false}
+          />
+        );
+      })}
 
-              {/* Remove button appears only on hover */}
-              <button
-                type="button"
-                className="todo__remove"
-                data-cy="TodoDelete"
-                onClick={() => handleDelete(todo.id)}
-              >
-                ×
-              </button>
-            </>
-          )}
-
-          {/* overlay will cover the todo while it is being deleted or updated */}
-          <div
-            data-cy="TodoLoader"
-            className={classNames('modal overlay', {
-              'is-active':
-                updatingTodoId === todo.id || deletingTodoIds.includes(todo.id),
-            })}
-          >
-            <div className="modal-background has-background-white-ter" />
-            <div className="loader" />
-          </div>
-        </div>
-      ))}
+      {tempTodo && (
+        <TodoItem
+          todo={tempTodo}
+          editingId={editingId}
+          changingTitle={changingTitle}
+          updatingTodoIds={updatingTodoIds}
+          deletingTodoIds={deletingTodoIds}
+          setEditingId={setEditingId}
+          setChangingTitle={setChangingTitle}
+          toggleTodo={toggleTodo}
+          handleTitleChange={handleTitleChange}
+          handleBlur={handleBlur}
+          handleKeyUp={handleKeyUp}
+          handleDelete={handleDelete}
+          isTempTodo={true}
+        />
+      )}
     </section>
   );
 };
